@@ -1,0 +1,24 @@
+sudo: required
+services:
+  - docker
+
+before_install:
+  - docker build -t joaquinmw1994/react-test -f ./frontend/Dockerfile.dev ./frontend
+
+script:
+  - docker run joaquinmw1994/react-test npm run test -- --coverage
+
+after_success:
+  - APP_ROOT_NAME=multi-container
+  - docker build -t ${DOCKER_ID}/${APP_ROOT_NAME}-frontend ./frontend
+  - docker build -t ${DOCKER_ID}/${APP_ROOT_NAME}-nginx ./nginx
+  - docker build -t ${DOCKER_ID}/${APP_ROOT_NAME}-worker ./fibo-worker
+  - docker build -t ${DOCKER_ID}/${APP_ROOT_NAME}-backend ./express-backend
+
+  # Log in to docker CLI
+  - echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_ID" --password-stdin
+  # Push images to docker hub
+  - docker push ${DOCKER_ID}/${APP_ROOT_NAME}-frontend
+  - docker push ${DOCKER_ID}/${APP_ROOT_NAME}-nginx
+  - docker push ${DOCKER_ID}/${APP_ROOT_NAME}-worker
+  - docker push ${DOCKER_ID}/${APP_ROOT_NAME}-backend
